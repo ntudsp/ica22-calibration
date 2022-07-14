@@ -1,0 +1,71 @@
+---
+title: "Replication code for: Assessment Of A Cost-Effective Headphone Calibration Procedure For Soundscape Evaluations"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+
+library(dplyr)
+library(plyr)
+library(readr)
+library(ggplot2)
+library(reshape2)
+library(tidyr)                      
+                      
+```
+
+## Data Preparation
+
+The survey data was collected via a matlab GUI (https://github.com/kenowr/satp-gui). The data from each participant is stored in a single csv file. All participants' data would be merged into a single dataframe.
+
+```{r dataloader}
+
+#merge all csv files
+allcsvnames <- list.files(path = "./UCL Result",
+                        pattern = "*.csv", full.names = TRUE)
+satpMalay <- ldply(allcsvnames,read.csv,header=FALSE)
+
+#extract participant ID
+participantID <- as.numeric(gsub(".*?([0-9]+).*", 
+                                 "\\1", allcsvnames))
+noOfStimuli <- 27
+participantIDvec <- rep(1:length(participantID), each=noOfStimuli)
+
+satpMalay<-cbind(participantIDvec,satpMalay)
+
+colnames(satpMalay)<-c("participantID","stimuliID",
+                      "pleasant", "chaotic",
+                      "vibrant","uneventful",
+                      "calm", "annoying",
+                      "eventful","monotonous",
+                      "check","duration")
+
+satpMalayClean<- satpMalay %>%
+        filter(participantID!=4) %>%
+        filter(participantID!=16)
+
+#export csv
+write.csv(x=satpMalayClean,
+          file = "SATPMalayP2_NTU.csv",
+          row.names = FALSE)
+
+```
+
+## Including Code
+
+You can include R code in the document as follows:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

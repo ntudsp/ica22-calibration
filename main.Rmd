@@ -12,54 +12,124 @@ library(readr)
 library(ggplot2)
 library(reshape2)
 library(tidyr)                      
-                      
+source("helper.R")
+library(hrbrthemes)
+library(viridis)
+
 ```
 
 ## Data Preparation
 
 The survey data was collected via a matlab GUI (https://github.com/kenowr/satp-gui). The data from each participant is stored in a single csv file. All participants' data would be merged into a single dataframe.
 
-```{r dataloader}
+### Listening test data
 
-#merge all csv files
-allcsvnames <- list.files(path = "./UCL Result",
+```{r dataloader_subj}
+
+#merge all csv files containing subjective data based on UCL calibration
+allcsvnames.UCL <- list.files(path = "./UCL Result",
                         pattern = "*.csv", full.names = TRUE)
-satpMalay <- ldply(allcsvnames,read.csv,header=FALSE)
+subj.UCL <- ldply(allcsvnames.UCL,read.csv,header=FALSE)
+
+#merge all csv files containing subjective data based on NTU calibration
+allcsvnames.NTU <- list.files(path = "./NTU Result",
+                        pattern = "*.csv", full.names = TRUE)
+subj.NTU <- ldply(allcsvnames.NTU,read.csv,header=FALSE)
 
 #extract participant ID
-participantID <- as.numeric(gsub(".*?([0-9]+).*", 
-                                 "\\1", allcsvnames))
-noOfStimuli <- 27
-participantIDvec <- rep(1:length(participantID), each=noOfStimuli)
+participantID.UCL <- as.numeric(gsub(".*?([0-9]+).*", 
+                                 "\\1", allcsvnames.UCL))
+participantID.NTU <- as.numeric(gsub(".*?([0-9]+).*", 
+                                 "\\1", allcsvnames.NTU))
 
-satpMalay<-cbind(participantIDvec,satpMalay)
+noOfStimuli <- 27 #27 stimuli from SATP project
+participantIDvec.UCL <- rep(1:length(participantID.UCL), each=noOfStimuli)
+participantIDvec.NTU <- rep(1:length(participantID.NTU), each=noOfStimuli)
 
-colnames(satpMalay)<-c("participantID","stimuliID",
-                      "pleasant", "chaotic",
-                      "vibrant","uneventful",
-                      "calm", "annoying",
-                      "eventful","monotonous",
-                      "check","duration")
+#add participant ID col
+subj.UCL<-cbind(participantIDvec.UCL,subj.UCL) %>% mutate(Calibration="UCL")
+subj.NTU<-cbind(participantIDvec.NTU,subj.NTU) %>% mutate(Calibration="NTU")
 
-satpMalayClean<- satpMalay %>%
+colnames(subj.UCL)<-c("participantID","stimuliID","pleasant", "chaotic",
+                      "vibrant","uneventful","calm", "annoying",
+                      "eventful","monotonous","check","duration","Calibration")
+colnames(subj.NTU)<-c("participantID","stimuliID","pleasant", "chaotic",
+                      "vibrant","uneventful","calm", "annoying",
+                      "eventful","monotonous","check","duration","Calibration")
+
+#remove outliers
+subj.UCL<- subj.UCL %>%
         filter(participantID!=4) %>%
         filter(participantID!=16)
 
-#export csv
-write.csv(x=satpMalayClean,
-          file = "SATPMalayP2_NTU.csv",
-          row.names = FALSE)
+subj.NTU<- subj.NTU %>%
+        filter(participantID!=1)
+
+#Paired data
+pairing.key<-read_delim("key_correspondence.txt",delim = "/",col_names = F) %>%
+  `colnames<-`(c("NTU.ID","UCL.ID")) %>%
+  mutate(UCL.ID=ifelse(UCL.ID=="No corresponding UCL",NA,UCL.ID)) %>% #remove unpaired
+  filter(!NTU.ID==1) %>% #remove outlier
+  merge(.,data.frame(UCL.ID=unique(subj.UCL$participantID)),all = TRUE)
+
+#merge matched ID data from both NTU and UCL sets with corresponding key pairs
+
+subj.comb<-rbind(subj.UCL %>% 
+  filter(participantID %in% pairing.key$UCL.ID) %>%
+  mutate(UCL.ID=participantID) %>%
+  merge(.,pairing.key, by="UCL.ID"),subj.NTU %>% 
+  filter(participantID %in% pairing.key$NTU.ID) %>%
+  mutate(NTU.ID=participantID) %>%
+  merge(.,pairing.key, by="NTU.ID"))  %>%
+  select(!participantID)
 
 ```
 
-## Including Code
+## Optimal pooled t-test
 
-You can include R code in the document as follows:
 
-```{r cars}
-summary(cars)
+
+```{r optt}
+
+paq<-c("eventful","vibrant","pleasant","calm",
+       "uneventful","monotonous","annoying","chaotic")
+n.stimuliID<-27
+
+#initialise dataframe to store p.values of optt
+optt.colnames<-c("StimuliID", "PAQ", "p.value","diff")
+optt.pval.df<-data.frame(
+  matrix(ncol=4,nrow=0, 
+         dimnames=list(NULL, optt.colnames)))
+
+#optimal pooled t-test for each stimuli and PAQ combination
+for(st.ID in 1:n.stimuliID){
+  for(paq.ID in paq){
+    
+    t<-subj.comb %>%
+      filter(stimuliID==st.ID) %>%
+      select(c("NTU.ID","UCL.ID",paq.ID,"Calibration")) %>%
+      pivot_wider(names_from = Calibration,values_from = paq.ID)
+    
+    optt<-t.test.partial(as.data.frame(t[c("UCL","NTU")]))
+    optt.pval.df<-rbind(optt.pval.df,
+                      data.frame(st.ID,paq.ID,
+                                 optt$p.value,optt$estimate,
+                                 row.names = NULL) %>%
+                        `colnames<-`(optt.colnames))
+  }
+}
+
+optt.pval.df$stars <- cut(optt.pval.df$p.value, 
+                     breaks=c(-Inf, 0.001, 0.01, 0.05, Inf), 
+                     label=c("***", "**", "*", ""))
+
+#Plot heatmap of estimated mean of differences + signif stars
+ggplot(optt.pval.df,aes(PAQ, StimuliID, fill= diff)) + 
+  geom_tile() +
+  scale_fill_distiller(palette = "PuOr") +
+  geom_text(aes(label=stars), color="black", size=5) +
+  theme_ipsum() 
 ```
-
 ## Including Plots
 
 You can also embed plots, for example:

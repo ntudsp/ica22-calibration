@@ -6,6 +6,7 @@ output: github_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = FALSE)
 
+library(readxl)
 library(dplyr)
 library(plyr)
 library(readr)
@@ -21,6 +22,58 @@ library(viridis)
 ## Data Preparation
 
 The survey data was collected via a matlab GUI (https://github.com/kenowr/satp-gui). The data from each participant is stored in a single csv file. All participants' data would be merged into a single dataframe.
+
+### Acoustic parameters
+
+Extract both single value and acoustic parameters as a function of time.
+
+```{r dataloader_obj}
+
+#load computed single values
+data.sv<-read_excel("./Acoustic Params/acousticParams.xlsx",skip = 1) %>%
+  `colnames<-`(c("UCLFilename","Channel","L(C)","L(C).Units",
+                 "Min(C)","Min(C).Units","Min(C).Time","Min(C).Time.Units",
+                 "Max(C)","Max(C).Units","Max(C).Time","Max(C).Time.Units",
+                 "L5(C)","L5(C).Units","L10(C)","L10(C).Units",
+                 "L50(C)","L50(C).Units","L90(C)","L90(C).Units",
+                 "L95(C)","L95(C).Units","L(A)","L(A).Units",
+                 "Min(A)","Min(A).Units","Min(A).Time","Min(A).Time.Units",
+                 "Max(A)","Max(A).Units","Max(A).Time","Max(A).Time.Units",
+                 "L5(A)","L5(A).Units","L10(A)","L10(A).Units",
+                 "L50(A)","L50(A).Units","L90(A)","L90(A).Units",
+                 "L95(A)","L95(A).Units","N5","N5.Units",
+                 "Min(N)","Min(N).Units","Min(N).Time","Min(N).Time.Units",
+                 "Max(N)","Max(N).Units","Max(N).Time","Max(N).Time.Units",
+                 "N10","N10.Units","N50","N50.Units",
+                 "N90","N00.Units","N95","N95.Units","S","S.Units",
+                 "Min(S)","Min(S).Units","Min(S).Time","Min(S).Time.Units",
+                 "Max(S)","Max(S).Units","Max(S).Time","Max(S).Time.Units",
+                 "S5","S5.Units","S10","S10.Units",
+                 "S50","S50.Units","S90","S90.Units",
+                 "S95","S95.Units","R","R.Units",
+                 "Min(R)","Min(R).Units","Min(R).Time","Min(R).Time.Units",
+                 "Max(R)","Max(R).Units","Max(R).Time","Max(R).Time.Units",
+                 "R5","R5.Units","R10","R10.Units",
+                 "R50","R50.Units","R90","R90.Units",
+                 "R95","R95.Units","Tone","Tone.Units",
+                 "Min(Tone)","Min(Tone).Units","Min(Tone).Time","Min(Tone).Time.Units",
+                 "Max(Tone)","Max(Tone).Units","Max(Tone).Time","Max(Tone).Time.Units",
+                 "Tone5","Tone5.Units","Tone10","Tone10.Units",
+                 "Tone50","Tone50.Units","Tone90","Tone90.Units",
+                 "Tone95","Tone95.Units","Tonef","Tonef.Units",
+                 "Min(Tonef)","Min(Tonef).Units","Min(Tonef).Time","Min(Tonef).Time.Units",
+                 "Max(Tonef)","Max(Tonef).Units","Max(Tonef).Time","Max(Tonef).Time.Units",
+                 "Tonef5","Tonef5.Units","Tonef10","Tonef10.Units",
+                 "Tonef50","Tonef50.Units","Tonef90","Tonef90.Units",
+                 "Tonef95","Tonef95.Units","Fluc","Fluc.Units",
+                 "Min(Fluc)","Min(Fluc).Units","Min(Fluc).Time","Min(Fluc).Time.Units",
+                 "Max(Fluc)","Max(Fluc).Units","Max(Fluc).Time","Max(Fluc).Time.Units",
+                 "Fluc5","Fluc5.Units","Fluc10","Fluc10.Units",
+                 "Fluc50","Fluc50.Units","Fluc90","Fluc90.Units",
+                 "Fluc95","Fluc95.Units"))
+
+```
+
 
 ### Listening test data
 
@@ -46,7 +99,8 @@ noOfStimuli <- 27 #27 stimuli from SATP project
 participantIDvec.UCL <- rep(1:length(participantID.UCL), each=noOfStimuli)
 participantIDvec.NTU <- rep(1:length(participantID.NTU), each=noOfStimuli)
 
-stimuli.Name <- read.csv2(file = "stimuliIDkey.csv",sep = ",")
+stimuli.Name <- read.csv2(file = "stimuliIDkey.csv",sep = ",") %>%
+  `colnames<-`(c("stimuliID","UCLFilename"))
 
 #add participant ID col & stimuliName
 subj.UCL<-cbind(participantIDvec.UCL,subj.UCL) %>% mutate(Calibration="UCL")
@@ -61,12 +115,12 @@ colnames(subj.NTU)<-c("participantID","stimuliID","pleasant", "chaotic",
 
 #remove outliers
 subj.UCL<- subj.UCL %>%
-  merge(.,stimuli.Name) %>%
+  #merge(.,stimuli.Name) %>%
   filter(participantID!=4) %>%
   filter(participantID!=16)
 
 subj.NTU<- subj.NTU %>%
-  merge(.,stimuli.Name) %>%
+  #merge(.,stimuli.Name) %>%
   filter(participantID!=1)
 
 #Paired data
@@ -89,7 +143,20 @@ subj.comb<-rbind(subj.UCL %>%
 
 ```
 
-## Optimal pooled t-test
+## Analysis
+
+### Single value acoustic parameters
+
+```{r analysis.SV}
+
+#Bland-Altman (parametric)
+
+
+
+```
+
+
+### Optimal pooled t-test
 
 
 
@@ -128,17 +195,21 @@ optt.pval.df$stars <- cut(optt.pval.df$p.value,
                      label=c("***", "**", "*", ""))
 optt.pval.df<-merge(optt.pval.df,stimuli.Name)
 
-options(repr.plot.width = 20, repr.plot.height =100)
-
 #Plot heatmap of estimated mean of differences + signif stars
-ggplot(optt.pval.df,aes(PAQ, UCLFilename,fill=diff)) + 
+g<-ggplot(optt.pval.df,aes(PAQ, UCLFilename,fill=diff)) + 
   geom_tile() +
-  scale_fill_distiller(palette = "PuOr",limits=c(-50,50)) +
+  scale_fill_distiller(palette = "PuOr",limits=c(-60,60)) +
   #scale_y_discrete(expand = c(0, 0)) +
   geom_text(aes(label=stars), color="black", 
             size=5,vjust = 0.75) +
-  labs(fill='Mean of \ndifferences') +
-  theme_ipsum() 
+  labs(fill='Mean of \ndifferences',
+       y="Stimuli from SATP",
+       x="ISO/TS 12913-2 Perceived affective quality attributes") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 30, 
+                                         vjust = 0.75, hjust=0.5)) 
+g
+ggsave("optt.pdf",plot = g, width = 1200, height = 1000, units = "px",scale = 1.5)
 
 ```
 ## Including Plots

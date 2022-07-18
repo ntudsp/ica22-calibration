@@ -1,31 +1,17 @@
----
-title: "Replication code for: Assessment Of A Cost-Effective Headphone Calibration Procedure For Soundscape Evaluations"
-output: github_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = FALSE)
-
-library(dplyr)
-library(plyr)
-library(readr)
-library(ggplot2)
-library(reshape2)
-library(tidyr)                      
-source("helper.R")
-library(hrbrthemes)
-library(viridis)
-
-```
+Replication code for: Assessment Of A Cost-Effective Headphone
+Calibration Procedure For Soundscape Evaluations
+================
 
 ## Data Preparation
 
-The survey data was collected via a matlab GUI (https://github.com/kenowr/satp-gui). The data from each participant is stored in a single csv file. All participants' data would be merged into a single dataframe.
+The survey data was collected via a matlab GUI
+(<https://github.com/kenowr/satp-gui>). The data from each participant
+is stored in a single csv file. All participants’ data would be merged
+into a single dataframe.
 
 ### Listening test data
 
-```{r dataloader_subj}
-
+``` r
 #merge all csv files containing subjective data based on UCL calibration
 allcsvnames.UCL <- list.files(path = "./UCL Result",
                         pattern = "*.csv", full.names = TRUE)
@@ -86,15 +72,11 @@ subj.comb<-rbind(subj.UCL %>%
   mutate(NTU.ID=participantID) %>%
   merge(.,pairing.key, by="NTU.ID"))  %>%
   select(!participantID)
-
 ```
 
 ## Optimal pooled t-test
 
-
-
-```{r optt, out.height="150%"}
-
+``` r
 paq<-c("eventful","vibrant","pleasant","calm",
        "uneventful","monotonous","annoying","chaotic")
 n.stimuliID<-27
@@ -131,22 +113,21 @@ optt.pval.df<-merge(optt.pval.df,stimuli.Name)
 options(repr.plot.width = 20, repr.plot.height =100)
 
 #Plot heatmap of estimated mean of differences + signif stars
-ggplot(optt.pval.df,aes(PAQ, UCLFilename,fill=diff)) + 
-  geom_tile() +
-  scale_fill_distiller(palette = "PuOr",limits=c(-50,50)) +
-  #scale_y_discrete(expand = c(0, 0)) +
+ggplot(optt.pval.df,aes(PAQ, UCLFilename)) + 
+  geom_tile(aes(fill=diff)) +
+  scale_fill_distiller(palette = "PuOr") +
+  scale_y_discrete(expand = c(0, 0)) +
   geom_text(aes(label=stars), color="black", 
-            size=5,vjust = 0.75) +
-  labs(fill='Mean of \ndifferences') +
+            size=5,vjust = -1) +
   theme_ipsum() 
-
 ```
-## Including Plots
+
+<img src="main_files/figure-gfm/optt-1.png" height="150%" /> \##
+Including Plots
 
 You can also embed plots, for example:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
+![](main_files/figure-gfm/pressure-1.png)<!-- -->
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Note that the `echo = FALSE` parameter was added to the code chunk to
+prevent printing of the R code that generated the plot.

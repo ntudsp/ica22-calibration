@@ -1,3 +1,54 @@
+#defined values for tidyness
+sv.colnames<-c("UCLFilename","Channel","L(C)","L(C).Units",
+  "Min(C)","Min(C).Units","Min(C).Time","Min(C).Time.Units",
+  "Max(C)","Max(C).Units","Max(C).Time","Max(C).Time.Units",
+  "L5(C)","L5(C).Units","L10(C)","L10(C).Units",
+  "L50(C)","L50(C).Units","L90(C)","L90(C).Units",
+  "L95(C)","L95(C).Units","L(A)","L(A).Units",
+  "Min(A)","Min(A).Units","Min(A).Time","Min(A).Time.Units",
+  "Max(A)","Max(A).Units","Max(A).Time","Max(A).Time.Units",
+  "L5(A)","L5(A).Units","L10(A)","L10(A).Units",
+  "L50(A)","L50(A).Units","L90(A)","L90(A).Units",
+  "L95(A)","L95(A).Units","N5","N5.Units",
+  "Min(N)","Min(N).Units","Min(N).Time","Min(N).Time.Units",
+  "Max(N)","Max(N).Units","Max(N).Time","Max(N).Time.Units",
+  "N10","N10.Units","N50","N50.Units",
+  "N90","N90.Units","N95","N95.Units","S","S.Units",
+  "Min(S)","Min(S).Units","Min(S).Time","Min(S).Time.Units",
+  "Max(S)","Max(S).Units","Max(S).Time","Max(S).Time.Units",
+  "S5","S5.Units","S10","S10.Units",
+  "S50","S50.Units","S90","S90.Units",
+  "S95","S95.Units","R","R.Units",
+  "Min(R)","Min(R).Units","Min(R).Time","Min(R).Time.Units",
+  "Max(R)","Max(R).Units","Max(R).Time","Max(R).Time.Units",
+  "R5","R5.Units","R10","R10.Units",
+  "R50","R50.Units","R90","R90.Units",
+  "R95","R95.Units", "Tone","Tone.Units",
+  "Min(Tone)","Min(Tone).Units","Min(Tone).Time","Min(Tone).Time.Units",
+  "Max(Tone)","Max(Tone).Units","Max(Tone).Time","Max(Tone).Time.Units",
+  "Tone5","Tone5.Units","Tone10","Tone10.Units",
+  "Tone50","Tone50.Units","Tone90","Tone90.Units",
+  "Tone95","Tone95.Units","Min(Tonef)","Min(Tonef).Units",
+  "Min(Tonef).Time","Min(Tonef).Time.Units",
+  "Max(Tonef)","Max(Tonef).Units","Max(Tonef).Time","Max(Tonef).Time.Units",
+  "Tonef5","Tonef5.Units","Tonef10","Tonef10.Units",
+  "Tonef50","Tonef50.Units","Tonef90","Tonef90.Units",
+  "Tonef95","Tonef95.Units","Fluc","Fluc.Units",
+  "Min(Fluc)","Min(Fluc).Units","Min(Fluc).Time","Min(Fluc).Time.Units",
+  "Max(Fluc)","Max(Fluc).Units","Max(Fluc).Time","Max(Fluc).Time.Units",
+  "Fluc5","Fluc5.Units","Fluc10","Fluc10.Units",
+  "Fluc50","Fluc50.Units","Fluc90","Fluc90.Units",
+  "Fluc95","Fluc95.Units")
+
+params.udrTest<-
+  c("L(C)","L5(C)","L10(C)","L50(C)","L90(C)","L95(C)",
+"L(A)","L5(A)","L10(A)","L50(A)","L90(A)","L95(A)",
+"N5","N10","N50","N90","N95",
+"S","S5","S10","S50","S90","S95",
+"R","R5","R10","R50","R90","R95",
+"Tone5","Tone10","Tone50","Tone90","Tone95",
+"Fluc5","Fluc10","Fluc50","Fluc90","Fluc95")
+
 #adopted from 
 
 t.test.partial <- function(paired, unpaired.x, unpaired.y,
@@ -109,27 +160,61 @@ t.test.partial <- function(paired, unpaired.x, unpaired.y,
   rval
 }
 
-list(paired = structure(list(test = c(52.87, 52.37, 47.39,
-                                      52.56, 54.43, 50.79), 
-                             cont = c(52.51, 57.87, 51.41,
-                                      57.37, 56.84, 52.47)), 
-                        class = "data.frame", 
-                        row.names = c(NA, -6L)), 
-     unpaired = structure(list(test = c(52.32, 53.26,53.16, 
-                                        50.23, 52.34, 
-                                        NA, NA, NA), 
-                               cont = c(47.21, 46.38, 54.34,                                                                                                                     60.15, 55.08, 55.4, 58.05, 55.88)), class = "data.frame",
-                              row.names = c(NA, -8L))) -> m2
+#function for BA plots
 
-set.seed(1)
+baplotOpts<-function(data,X,Y,color, #ggplot aes
+                     fg.XY, #facet grid formula
+                     np,#no. of params
+                     #hline for mean diff, upper LoA, lower LoA
+                     hl.mean, hl.upper, hl.lower, 
+                     #lower/upper 95% limits of lwr/upr LoA & mean
+                     lwr.ymin,lwr.ymax,upr.ymin,upr.ymax,m.ymin,m.ymax,
+                     geom.text.size,theme.size,geom.point.size,colorp,
+                     xlim.low,xlim.upp,ylim.low,ylim.upp,ylabel,xlabel){
+  ggplot(data = data,
+         aes(x={{X}},y={{Y}},color={{color}})) +
+    facet_grid({{fg.XY}}) +
+    geom_point(size=geom.point.size,alpha=0.5) + #add differences
+    #average difference line (mean)
+    geom_hline(aes(yintercept = {{hl.mean}}), color=set1clr[5]) +
+    geom_text(aes(xlim.upp,{{hl.mean}},
+                  label = paste("M =",as.character(round({{hl.mean}},2))), 
+                  vjust = -0.5,hjust="right"), 
+              color=set1clr[5],size=geom.text.size, 
+              check_overlap = T) +
+    #95% cf. int. mean
+    geom_rect(data = data[1:(np*3),], #prevent drawing rect every repeated row
+              aes(xmin = -Inf, xmax = Inf, 
+                  ymin = {{m.ymin}}, ymax = {{m.ymax}}),
+              fill = set1clr[5], alpha = 0.2,color = NA) +
+    #lower bound line
+    geom_hline(aes(yintercept = {{hl.lower}}), 
+               color = set1clr[4], linetype="dashed") +
+    geom_text(aes(xlim.upp,{{hl.lower}},
+                  label = paste("M - 1.96SD:",as.character(round({{hl.lower}},2))), 
+                  vjust = 2.5,hjust="right"), 
+              color=set1clr[4],size=geom.text.size,
+              check_overlap = T, parse = F) +
+    geom_rect(data = data[1:(np*3),],aes(xmin = -Inf, xmax = Inf, 
+                                         ymin = {{lwr.ymin}}, ymax = {{lwr.ymax}}),
+              fill = set1clr[4], alpha = 0.2,color = NA) +
+    #upper bound line
+    geom_hline(aes(yintercept = {{hl.upper}}), 
+               color = set1clr[4], linetype="dashed")  +
+    geom_text(aes(xlim.upp,{{hl.upper}},
+                  label = paste("M + 1.96SD:",as.character(round({{hl.upper}},2))), 
+                  vjust = -1.5 ,hjust="right"), size=geom.text.size,
+              color=set1clr[4],check_overlap = T, parse = F) +
+    geom_rect(data = data[1:(np*3),],aes(xmin = -Inf, xmax = Inf, 
+                                         ymin = {{upr.ymin}}, ymax = {{upr.ymax}}),
+              fill = set1clr[4], alpha = 0.2,color = NA) +
+    xlim(xlim.low, xlim.upp) + ylim(ylim.low, ylim.upp) +
+    scale_color_brewer(palette = "Set1") +
+    ylab(label = ylabel) + xlab(label = xlabel) +
+    theme(text = element_text(size=theme.size),legend.position="none",
+          axis.text.x = element_text(angle = 30, 
+                                     vjust = 0.75, hjust=0.5))
+}
 
-n <- 40
-p <- 0.3
-r <- 0.5
-
-m <- MASS::mvrnorm(n, c(0, 0), matrix(c(1, r, r, 1), 2))
-m <- t(t(m) * c(1, 2))
-m <- t(t(m) + c(51, 50))
-m <- round(m, 1)
-m[sample(n*2, p*n*2)] <- NA
-colnames(m) <- c("test", "cont")
+#rounding function
+round_any = function(x, accuracy, f=round){f(x/ accuracy) * accuracy}

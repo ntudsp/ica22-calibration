@@ -18,7 +18,7 @@ source("helper.R")
 library(hrbrthemes)
 library(viridis)
 library(RColorBrewer)
-
+library(forcats)
 ```
 
 ## Data Preparation
@@ -122,6 +122,7 @@ subj.comb<-rbind(subj.UCL %>%
 
 ```{r analysis.SV}
 defvar<-c("UCLFilename","method","Channel")
+n.stimuliID<-27
 
 #t-distribution at 95% Conf Lvl
 td<-qt(0.975,df=n.stimuliID-1)
@@ -280,7 +281,8 @@ for (i in 1:length(df.Names)) {
      xlim.low[[i]],xlim.upp[[i]],ylim.low=-ylim.upp[[i]],ylim.upp[[i]],
      ylabel="Difference between methods",
      xlabel="Arithemic average between methods")
-    ggsave(paste(i,"BAPlot.pdf"),plot = g, width = 1500, height = 800, units = "px",scale = 2.5)
+  g
+  ggsave(paste(i,"BAPlot.pdf"),plot = g, width = 1500, height = 800, units = "px",scale = 2.5)
 }
 
 ```
@@ -293,7 +295,6 @@ for (i in 1:length(df.Names)) {
 
 paq<-c("eventful","vibrant","pleasant","calm",
        "uneventful","monotonous","annoying","chaotic")
-n.stimuliID<-27
 
 #initialise dataframe to store p.values of optt
 optt.colnames<-c("stimuliID", "PAQ", "p.value","diff")
@@ -318,27 +319,37 @@ for(st.ID in 1:n.stimuliID){
                         `colnames<-`(optt.colnames))
   }
 }
+optt.pval.df<-merge(optt.pval.df,stimuli.Name) %>%
+  #Bonferroni correction
+  dplyr::mutate(adj.pval=p.adjust(p = p.value,
+                                  method = "bonferroni",
+                                  n = n.stimuliID*length(paq))) %>%
+  #compute ave abs diff for ranking
+  dplyr::group_by(UCLFilename) %>% 
+  dplyr::mutate(ave=mean(abs(diff))) %>% 
+  dplyr::ungroup() %>%
+  dplyr::mutate(UCLFilename=as.factor(UCLFilename)) %>%
+  dplyr::mutate(UCLFilename=fct_reorder(UCLFilename,-ave))
 
-optt.pval.df$stars <- cut(optt.pval.df$p.value, 
+optt.pval.df$stars <- cut(optt.pval.df$adj.pval, 
                      breaks=c(-Inf, 0.001, 0.01, 0.05, Inf), 
                      label=c("***", "**", "*", ""))
-optt.pval.df<-merge(optt.pval.df,stimuli.Name)
 
 #Plot heatmap of estimated mean of differences + signif stars
-g<-ggplot(optt.pval.df,aes(PAQ, UCLFilename,fill=diff)) + 
+g<-ggplot(optt.pval.df,aes(UCLFilename,PAQ,fill=diff)) + 
   geom_tile() +
   scale_fill_distiller(palette = "PuOr",limits=c(-60,60)) +
   #scale_y_discrete(expand = c(0, 0)) +
   geom_text(aes(label=stars), color="black", 
-            size=5,vjust = 0.75) +
+            size=5,vjust = 0.75,angle = 30) +
   labs(fill='Mean of \ndifferences',
-       y="Stimuli from SATP",
-       x="ISO/TS 12913-2 Perceived affective quality attributes") +
+       y="ISO/TS 12913-2 Perceived affective quality attributes",
+       x="Stimuli from SATP") +
   theme_bw() +
-  theme(axis.text.x = element_text(angle = 30, 
-                                         vjust = 0.75, hjust=0.5)) 
+  theme(axis.text.x = element_text(angle = 30,vjust = 0.75, hjust=0.5),
+        axis.text.y = element_text(angle = 30,vjust = 0.5, hjust=0.75)) 
 g
-ggsave("optt.pdf",plot = g, width = 1200, height = 1000, units = "px",scale = 1.5)
+ggsave("optt.pdf",plot = g, width = 1800, height = 1000, units = "px",scale = 1.5)
 
 ```
 

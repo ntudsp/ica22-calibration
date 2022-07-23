@@ -221,31 +221,45 @@ data.sv.ba2<-data.sv %>%
 
 params.LC<-c("L(C)","L5(C)","L10(C)","L50(C)","L90(C)","L95(C)")
 data.LC=data.sv.ba2 %>% 
-         filter(Params %in% params.LC)
+  filter(Params %in% params.LC) %>%
+  mutate(Params=as.factor(Params)) %>%
+  mutate(Params=fct_relevel(Params,params.LC))
 
 params.LA<-c("L(A)","L5(A)","L10(A)","L50(A)","L90(A)","L95(A)")
 data.LA=data.sv.ba2 %>% 
-         filter(Params %in% params.LA)
+  filter(Params %in% params.LA) %>%
+  mutate(Params=as.factor(Params)) %>%
+  mutate(Params=fct_relevel(Params,params.LA))
 
 params.N<-c("N5","N10","N50","N90","N95")
 data.N=data.sv.ba2 %>% 
-         filter(Params %in% params.N)
+  filter(Params %in% params.N) %>%
+  mutate(Params=as.factor(Params)) %>%
+  mutate(Params=fct_relevel(Params,params.N))
 
 params.S<-c("S","S5","S10","S50","S90","S95")
 data.S=data.sv.ba2 %>% 
-         filter(Params %in% params.S)
+  filter(Params %in% params.S) %>%
+  mutate(Params=as.factor(Params)) %>%
+  mutate(Params=fct_relevel(Params,params.S))
 
 params.R<-c("R","R5","R10","R50","R90","R95")
 data.R=data.sv.ba2 %>% 
-         filter(Params %in% params.R)
+  filter(Params %in% params.R) %>%
+  mutate(Params=as.factor(Params)) %>%
+  mutate(Params=fct_relevel(Params,params.R))
 
 params.T<-c("Tone5","Tone10","Tone50","Tone90","Tone95")
 data.T=data.sv.ba2 %>% 
-         filter(Params %in% params.T)
+  filter(Params %in% params.T) %>%
+  mutate(Params=as.factor(Params)) %>%
+  mutate(Params=fct_relevel(Params,params.T))
 
 params.F<-c("Fluc5","Fluc10","Fluc50","Fluc90","Fluc95")
 data.F=data.sv.ba2 %>% 
-         filter(Params %in% params.F)
+  filter(Params %in% params.F) %>%
+  mutate(Params=as.factor(Params)) %>%
+  mutate(Params=fct_relevel(Params,params.F))
 
 df.Names <- list(data.LC=data.LC, data.LA=data.LA,
                  data.S=data.S, data.N=data.N,
